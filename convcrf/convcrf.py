@@ -35,7 +35,7 @@ import gc
 
 
 default_conf = {
-    'filter_size': 7,
+    'filter_size': 11,
     'blur': 4,
     'merge': True,
     'norm': 'none',
