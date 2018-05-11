@@ -18,19 +18,22 @@ import scipy.misc
 import argparse
 
 import logging
-import time
 
 from convcrf import convcrf
+from fullcrf import fullcrf
 
 import torch
 from torch.autograd import Variable
 
 from utils import pascal_visualizer as vis
 
+import time
+
 try:
     import matplotlib.pyplot as plt
-    plt.figure()
     matplotlib = True
+    figure = plt.figure()
+    plt.close(figure)
 except:
     matplotlib = False
     pass
@@ -40,28 +43,31 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     stream=sys.stdout)
 
 
-def do_crf_inference(image, unary, speed_test):
+def do_crf_inference(image, unary):
 
     # get basic hyperparameters
     num_classes = unary.shape[2]
     shape = image.shape[0:2]
     config = convcrf.default_conf
-    config['filter_size'] = 9
+    config['filter_size'] = 7
     config['blur'] = 2
+
+    logging.info("Doing speed benchmark with filter size: {}"
+                 .format(config['filter_size']))
 
     ##
     # make input pytorch compatible
-    image = image.transpose(2, 0, 1)  # shape: [3, hight, width]
+    img = image.transpose(2, 0, 1)  # shape: [3, hight, width]
     # Add batch dimension to image: [1, 3, height, width]
-    image = image.reshape([1, 3, shape[0], shape[1]])
-    img_var = Variable(torch.Tensor(image), volatile=True).cuda()
+    img = img.reshape([1, 3, shape[0], shape[1]])
+    img_var = Variable(torch.Tensor(img), volatile=True).cuda()
 
-    unary = unary.transpose(2, 0, 1)  # shape: [3, hight, width]
+    un = unary.transpose(2, 0, 1)  # shape: [3, hight, width]
     # Add batch dimension to unary: [1, 21, height, width]
-    unary = unary.reshape([1, num_classes, shape[0], shape[1]])
-    unary_var = Variable(torch.Tensor(unary), volatile=True).cuda()
+    un = un.reshape([1, num_classes, shape[0], shape[1]])
+    unary_var = Variable(torch.Tensor(un), volatile=True).cuda()
 
-    logging.info("Build ConvCRF.")
+    logging.debug("Build ConvCRF.")
     ##
     # Create CRF module
     gausscrf = convcrf.GaussCRF(conf=config, shape=shape, nclasses=num_classes)
@@ -69,30 +75,65 @@ def do_crf_inference(image, unary, speed_test):
     # A CPU implementation of our message passing is not provided.
     gausscrf.cuda()
 
-    logging.info("Start Computation.")
     # Perform CRF inference
-    prediction = gausscrf.forward(unary=unary_var, img=img_var)
+    for i in range(3):
+        """
+        'Warm up': Our implementation compiles cuda kernels during runtime.
+        The first inference call thus comes with some overhead.
+        """
+        prediction = gausscrf.forward(unary=unary_var, img=img_var)
 
-    if speed_test:
-        # Uncomment to evaluation inference
+    logging.info("Start Computation.")
+    start_time = time.time()
 
-        logging.info("Doing speed evaluation.")
-        start_time = time.time()
-        for i in range(10):
-            # Running ConvCRF 10 times and average total time
-            gausscrf.forward(unary=unary_var, img=img_var)
+    for i in range(10):
+        # Running ConvCRF 10 times and average total time
+        prediction = gausscrf.forward(unary=unary_var, img=img_var)
 
-        duration = (time.time() - start_time) * 1000 / 10
+    duration = (time.time() - start_time) * 1000 / 10
 
-        logging.info("Finished running 10 predictions.")
-        logging.info("Avg Computation time: {} ms".format(duration))
+    logging.debug("Finished running 10 predictions.")
+    logging.debug("Avg Computation time: {} ms".format(duration))
 
-    return prediction.data.cpu().numpy()
+    myfullcrf = fullcrf.FullCRF(config, shape, num_classes)
+
+    # Initialize permutohedral lattice with image features
+    myfullcrf.compute_lattice(image)
+    """
+    Computing the lattice is actually part of the processing time.
+    However, in our implementation the features are generated in pu
+    """
+
+    for i in range(1):
+        fullprediction = myfullcrf.compute_dcrf(unary)
+
+    start_time = time.time()
+    for i in range(2):
+        # Running FullCRF 2 times and average total time
+        fullprediction = myfullcrf.compute_dcrf(unary)
+
+    fullduration = (time.time() - start_time) * 1000 / 2
+
+    logging.debug("Finished running 2 predictions.")
+    logging.debug("Avg Computation time: {} ms".format(fullduration))
+
+    logging.info("Using FullCRF took {:4.0f} ms ({:2.2f} s)".format(
+        fullduration, fullduration / 1000))
+
+    logging.info("Using ConvCRF took {:4.0f} ms ({:2.2f} s)".format(
+        duration, duration / 1000))
+
+    logging.info("Congratulation. Using ConvCRF provided a speed-up"
+                 " of {:.0f}.".format(fullduration / duration))
+
+    logging.info("")
+
+    return prediction.data.cpu().numpy(), fullprediction
 
 
-def plot_results(image, unary, prediction, label, args):
+def plot_results(image, unary, conv_out, full_out, label, args):
 
-    logging.info("Plot results.")
+    logging.debug("Plot results.")
 
     # Create visualizer
     myvis = vis.PascalVisualizer()
@@ -102,20 +143,23 @@ def plot_results(image, unary, prediction, label, args):
         coloured_label = myvis.id2color(id_image=label)
         # Plot parameters
         num_rows = 2
-        num_cols = 2
+        num_cols = 3
         off = 0
     else:
         # Plot parameters
-        num_cols = 3
-        num_rows = 1
+        num_cols = 2
+        num_rows = 2
         off = 1
 
     unary_hard = np.argmax(unary, axis=2)
     coloured_unary = myvis.id2color(id_image=unary_hard)
 
-    prediction = prediction[0]  # Remove Batch dimension
-    prediction_hard = np.argmax(prediction, axis=0)
-    coloured_crf = myvis.id2color(id_image=prediction_hard)
+    conv_out = conv_out[0]  # Remove Batch dimension
+    conv_hard = np.argmax(conv_out, axis=0)
+    coloured_conv = myvis.id2color(id_image=conv_hard)
+
+    full_hard = np.argmax(full_out, axis=2)
+    coloured_full = myvis.id2color(id_image=full_hard)
 
     if matplotlib:
         # Plot results using matplotlib
@@ -141,7 +185,12 @@ def plot_results(image, unary, prediction, label, args):
         ax = figure.add_subplot(num_rows, num_cols, 4 - off)
         ax.set_title('CRF Output')
         ax.axis('off')
-        ax.imshow(coloured_crf.astype(np.uint8))
+        ax.imshow(coloured_conv.astype(np.uint8))
+
+        ax = figure.add_subplot(num_rows, num_cols, 5 - off)
+        ax.set_title('Full Output')
+        ax.axis('off')
+        ax.imshow(coloured_full.astype(np.uint8))
 
         plt.show()
     else:
@@ -155,11 +204,11 @@ def plot_results(image, unary, prediction, label, args):
         # Save results to disk
         if label is not None:
             out_img = np.concatenate(
-                (image, coloured_label, coloured_unary, coloured_crf),
+                (image, coloured_label, coloured_unary, coloured_conv),
                 axis=1)
         else:
             out_img = np.concatenate(
-                (image, coloured_unary, coloured_crf),
+                (image, coloured_unary, coloured_conv),
                 axis=1)
 
         scp.misc.imsave(args.output, out_img)
@@ -190,9 +239,6 @@ def get_parser():
     parser.add_argument('--output', type=str,
                         help="Optionally save output as img.")
 
-    parser.add_argument('--speed_test', action='store_true',
-                        help="Evaluate and print inference speed.")
-
     # parser.add_argument('--compare', action='store_true')
     # parser.add_argument('--embed', action='store_true')
 
@@ -205,7 +251,7 @@ if __name__ == '__main__':
     parser = get_parser()
     args = parser.parse_args()
 
-    logging.info("Load and uncompress data.")
+    logging.debug("Load and uncompress data.")
 
     image = scp.misc.imread(args.image)
     unary = np.load(args.unary)['arr_0']
@@ -214,6 +260,6 @@ if __name__ == '__main__':
     else:
         label = args.labels
 
-    prediction = do_crf_inference(image, unary, args.speed_test)
-    plot_results(image, unary, prediction, label, args)
+    conv_out, full_out = do_crf_inference(image, unary)
+    plot_results(image, unary, conv_out, full_out, label, args)
     logging.info("Thank you for trying ConvCRFs.")
