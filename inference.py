@@ -12,8 +12,9 @@ import os
 import sys
 
 import numpy as np
-import scipy as scp
-import scipy.misc
+import imageio
+# import scipy as scp
+# import scipy.misc
 
 import argparse
 
@@ -54,12 +55,12 @@ def do_crf_inference(image, unary, speed_test):
     image = image.transpose(2, 0, 1)  # shape: [3, hight, width]
     # Add batch dimension to image: [1, 3, height, width]
     image = image.reshape([1, 3, shape[0], shape[1]])
-    img_var = Variable(torch.Tensor(image), volatile=True).cuda()
+    img_var = Variable(torch.Tensor(image)).cuda()
 
     unary = unary.transpose(2, 0, 1)  # shape: [3, hight, width]
     # Add batch dimension to unary: [1, 21, height, width]
     unary = unary.reshape([1, num_classes, shape[0], shape[1]])
-    unary_var = Variable(torch.Tensor(unary), volatile=True).cuda()
+    unary_var = Variable(torch.Tensor(unary)).cuda()
 
     logging.info("Build ConvCRF.")
     ##
@@ -161,7 +162,7 @@ def plot_results(image, unary, prediction, label, args):
                 (image, coloured_unary, coloured_crf),
                 axis=1)
 
-        scp.misc.imsave(args.output, out_img)
+        imageio.imwrite(args.output, out_img.astype(np.uint8))
 
         logging.info("Plot has been saved to {}".format(args.output))
 
@@ -206,10 +207,10 @@ if __name__ == '__main__':
 
     logging.info("Load and uncompress data.")
 
-    image = scp.misc.imread(args.image)
+    image = imageio.imread(args.image)
     unary = np.load(args.unary)['arr_0']
     if args.label is not None:
-        label = scp.misc.imread(args.label)
+        label = imageio.imread(args.label)
     else:
         label = args.labels
 

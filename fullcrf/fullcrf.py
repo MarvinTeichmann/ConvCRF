@@ -21,9 +21,6 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     level=logging.INFO,
                     stream=sys.stdout)
 
-import pyinn as P
-import gpustat
-
 
 from pydensecrf.utils import unary_from_labels, create_pairwise_bilateral
 from pydensecrf.utils import create_pairwise_gaussian
@@ -114,9 +111,6 @@ class FullCRF():
 
         self.smooth_feats = feats
 
-        # crf.addPairwiseEnergy(
-        #    self.smooth_feats, compat=self.conf['pos_feats']['compat'])
-
         sdims = self.conf['col_feats']['sdims']
         schan = self.conf['col_feats']['schan']
 
@@ -125,9 +119,6 @@ class FullCRF():
                                                 img=img, chdim=2)
 
         self.appear_feats = feats
-
-        # self.crf.addPairwiseEnergy(
-        #    self.appear_feats, compat=self.conf['pos_feats']['compat'])
 
         self.crf = crf
 

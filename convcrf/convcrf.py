@@ -23,7 +23,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
 
 import pyinn as P
 
-from pydensecrf.tests import utils as test_utils
+from utils import test_utils
 
 import torch
 import torch.nn as nn

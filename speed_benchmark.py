@@ -12,8 +12,9 @@ import os
 import sys
 
 import numpy as np
-import scipy as scp
-import scipy.misc
+import imageio
+# import scipy as scp
+# import scipy.misc
 
 import argparse
 
@@ -49,7 +50,7 @@ def do_crf_inference(image, unary):
     num_classes = unary.shape[2]
     shape = image.shape[0:2]
     config = convcrf.default_conf
-    config['filter_size'] = 7
+    config['filter_size'] = 11
     config['blur'] = 2
 
     logging.info("Doing speed benchmark with filter size: {}"
@@ -60,12 +61,12 @@ def do_crf_inference(image, unary):
     img = image.transpose(2, 0, 1)  # shape: [3, hight, width]
     # Add batch dimension to image: [1, 3, height, width]
     img = img.reshape([1, 3, shape[0], shape[1]])
-    img_var = Variable(torch.Tensor(img), volatile=True).cuda()
+    img_var = Variable(torch.Tensor(img)).cuda()
 
     un = unary.transpose(2, 0, 1)  # shape: [3, hight, width]
     # Add batch dimension to unary: [1, 21, height, width]
     un = un.reshape([1, num_classes, shape[0], shape[1]])
-    unary_var = Variable(torch.Tensor(un), volatile=True).cuda()
+    unary_var = Variable(torch.Tensor(un)).cuda()
 
     logging.debug("Build ConvCRF.")
     ##
@@ -101,18 +102,19 @@ def do_crf_inference(image, unary):
     myfullcrf.compute_lattice(image)
     """
     Computing the lattice is actually part of the processing time.
-    However, in our implementation the features are generated in pu
+    However, in our implementation the features are generated in python,
+    making it an unfairly slow step.
     """
 
-    for i in range(1):
+    for i in range(3):
         fullprediction = myfullcrf.compute_dcrf(unary)
 
     start_time = time.time()
-    for i in range(2):
+    for i in range(5):
         # Running FullCRF 2 times and average total time
         fullprediction = myfullcrf.compute_dcrf(unary)
 
-    fullduration = (time.time() - start_time) * 1000 / 2
+    fullduration = (time.time() - start_time) * 1000 / 5
 
     logging.debug("Finished running 2 predictions.")
     logging.debug("Avg Computation time: {} ms".format(fullduration))
@@ -211,7 +213,7 @@ def plot_results(image, unary, conv_out, full_out, label, args):
                 (image, coloured_unary, coloured_conv),
                 axis=1)
 
-        scp.misc.imsave(args.output, out_img)
+        imageio.imwrite(args.output, out_img.astype(np.uint8))
 
         logging.info("Plot has been saved to {}".format(args.output))
 
@@ -253,10 +255,10 @@ if __name__ == '__main__':
 
     logging.debug("Load and uncompress data.")
 
-    image = scp.misc.imread(args.image)
+    image = imageio.imread(args.image)
     unary = np.load(args.unary)['arr_0']
     if args.label is not None:
-        label = scp.misc.imread(args.label)
+        label = imageio.imread(args.label)
     else:
         label = args.labels
 
