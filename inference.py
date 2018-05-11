@@ -74,8 +74,7 @@ def do_crf_inference(image, unary, speed_test):
     prediction = gausscrf.forward(unary=unary_var, img=img_var)
 
     if speed_test:
-        # Uncomment to evaluation inference
-
+        # Evaluate inference speed
         logging.info("Doing speed evaluation.")
         start_time = time.time()
         for i in range(10):
@@ -85,7 +84,7 @@ def do_crf_inference(image, unary, speed_test):
         duration = (time.time() - start_time) * 1000 / 10
 
         logging.info("Finished running 10 predictions.")
-        logging.info("Avg Computation time: {} ms".format(duration))
+        logging.info("Avg. Computation time: {} ms".format(duration))
 
     return prediction.data.cpu().numpy()
 
