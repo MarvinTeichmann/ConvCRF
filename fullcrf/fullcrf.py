@@ -111,6 +111,11 @@ class FullCRF():
 
         self.smooth_feats = feats
 
+        self.crf = crf
+
+        self.crf.addPairwiseEnergy(
+            self.smooth_feats, compat=self.conf['pos_feats']['compat'])
+
         sdims = self.conf['col_feats']['sdims']
         schan = self.conf['col_feats']['schan']
 
@@ -120,15 +125,16 @@ class FullCRF():
 
         self.appear_feats = feats
 
-        self.crf = crf
+        self.crf.addPairwiseEnergy(
+            self.appear_feats, compat=self.conf['pos_feats']['compat'])
 
     def compute_dcrf(self, unary):
 
-        self.crf.addPairwiseEnergy(
-            self.smooth_feats, compat=self.conf['pos_feats']['compat'])
+        # self.crf.addPairwiseEnergy(
+        #    self.smooth_feats, compat=self.conf['pos_feats']['compat'])
 
-        self.crf.addPairwiseEnergy(
-            self.appear_feats, compat=self.conf['pos_feats']['compat'])
+        # self.crf.addPairwiseEnergy(
+        #     self.appear_feats, compat=self.conf['pos_feats']['compat'])
 
         eps = 1e-20
         unary = unary + eps
@@ -149,7 +155,7 @@ class FullCRF():
             unary = torch.nn.functional.softmax(
                 Variable(torch.Tensor(unary)), dim=2)
             unary = unary.data.numpy()
-        self.create_gaussians(img)
+        self.compute_lattice(img)
         return self.compute_dcrf(unary)
 
     def batched_compute(self, unary, img, softmax=False):

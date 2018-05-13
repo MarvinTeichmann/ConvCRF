@@ -16,12 +16,18 @@ import scipy as scp
 import math
 
 import logging
+import warnings
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     level=logging.INFO,
                     stream=sys.stdout)
 
-import pyinn as P
+try:
+    import pyinn as P
+except ImportError:
+    # Without pyinn the pytorch4 implementation
+    # has to be used. It is ~20% slower.
+    pass
 
 from utils import test_utils
 
@@ -30,6 +36,8 @@ import torch.nn as nn
 from torch.nn import functional as nnfun
 from torch.autograd import Variable
 from torch.nn.parameter import Parameter
+
+import torch.nn.functional as F
 
 import gc
 
@@ -382,7 +390,19 @@ class MessagePassingCol():
         if self.verbose:
             show_memusage(name="Init")
 
-        input_col = P.im2col(input, self.filter_size, 1, self.span)
+        if False:
+            input_col = P.im2col(input, self.filter_size, 1, self.span)
+        else:
+            # An alternative implementation of num2col.
+            # F.unfold is currently (jan 2018) not in stable
+            # This implementation will work with the next major
+            # pytorch release
+            input_unfold = F.unfold(input, self.filter_size, 1, self.span)
+            input_unfold = input_unfold.view(
+                bs, num_channels, self.filter_size, self.filter_size,
+                npixels[0], npixels[1])
+            input_col = input_unfold
+
         k_sqr = self.filter_size * self.filter_size
 
         if self.verbose:
@@ -404,9 +424,12 @@ class MessagePassingCol():
             in_0 = self.npixels[0]
             in_1 = self.npixels[1]
             message = message.view(bs, num_channels, npixels[0], npixels[1])
-            message = torch.nn.functional.upsample(message,
-                                                   scale_factor=self.blur,
-                                                   mode='bilinear')
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                # Suppress warning regarding corner alignment
+                message = torch.nn.functional.upsample(message,
+                                                       scale_factor=self.blur,
+                                                       mode='bilinear')
             message = message[:, :, pad_0:pad_0 + in_0, pad_1:in_1 + pad_1]
             message = message.contiguous()
 

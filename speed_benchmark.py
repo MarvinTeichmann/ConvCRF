@@ -51,7 +51,6 @@ def do_crf_inference(image, unary):
     shape = image.shape[0:2]
     config = convcrf.default_conf
     config['filter_size'] = 11
-    config['blur'] = 2
 
     logging.info("Doing speed benchmark with filter size: {}"
                  .format(config['filter_size']))
@@ -77,19 +76,21 @@ def do_crf_inference(image, unary):
     gausscrf.cuda()
 
     # Perform CRF inference
-    for i in range(3):
-        """
-        'Warm up': Our implementation compiles cuda kernels during runtime.
-        The first inference call thus comes with some overhead.
-        """
-        prediction = gausscrf.forward(unary=unary_var, img=img_var)
+    """
+    'Warm up': Our implementation compiles cuda kernels during runtime.
+    The first inference call thus comes with some overhead.
+    """
+    prediction = gausscrf.forward(unary=unary_var, img=img_var)
 
     logging.info("Start Computation.")
+    logging.info("Running multiple iteration. This may take a while.")
     start_time = time.time()
 
     for i in range(10):
-        # Running ConvCRF 10 times and average total time
+        # Running ConvCRF 10 times and report average total time
         prediction = gausscrf.forward(unary=unary_var, img=img_var)
+
+    prediction.cpu()  # wait for all GPU computations to finish
 
     duration = (time.time() - start_time) * 1000 / 10
 
@@ -99,7 +100,7 @@ def do_crf_inference(image, unary):
     myfullcrf = fullcrf.FullCRF(config, shape, num_classes)
 
     # Initialize permutohedral lattice with image features
-    myfullcrf.compute_lattice(image)
+    # myfullcrf.compute_lattice(image)
     """
     Computing the lattice is actually part of the processing time.
     However, in our implementation the features are generated in python,
@@ -107,12 +108,13 @@ def do_crf_inference(image, unary):
     """
 
     for i in range(3):
-        fullprediction = myfullcrf.compute_dcrf(unary)
+        #  'Warm up'
+        fullprediction = myfullcrf.compute(unary, image, softmax=False)
 
     start_time = time.time()
     for i in range(5):
-        # Running FullCRF 2 times and average total time
-        fullprediction = myfullcrf.compute_dcrf(unary)
+        # Running FullCRF 5 times and report average total time
+        fullprediction = myfullcrf.compute(unary, image, softmax=False)
 
     fullduration = (time.time() - start_time) * 1000 / 5
 
@@ -125,7 +127,7 @@ def do_crf_inference(image, unary):
     logging.info("Using ConvCRF took {:4.0f} ms ({:2.2f} s)".format(
         duration, duration / 1000))
 
-    logging.info("Congratulation. Using ConvCRF provided a speed-up"
+    logging.info("Congratulation. Using ConvCRF provids a speed-up"
                  " of {:.0f}.".format(fullduration / duration))
 
     logging.info("")
@@ -144,8 +146,8 @@ def plot_results(image, unary, conv_out, full_out, label, args):
         # Transform id image to coloured labels
         coloured_label = myvis.id2color(id_image=label)
         # Plot parameters
-        num_rows = 2
-        num_cols = 3
+        num_rows = 1
+        num_cols = 5
         off = 0
     else:
         # Plot parameters
@@ -185,12 +187,12 @@ def plot_results(image, unary, conv_out, full_out, label, args):
         ax.imshow(coloured_unary.astype(np.uint8))
 
         ax = figure.add_subplot(num_rows, num_cols, 4 - off)
-        ax.set_title('CRF Output')
+        ax.set_title('ConvCRF Output')
         ax.axis('off')
         ax.imshow(coloured_conv.astype(np.uint8))
 
         ax = figure.add_subplot(num_rows, num_cols, 5 - off)
-        ax.set_title('Full Output')
+        ax.set_title('FullCRF Output')
         ax.axis('off')
         ax.imshow(coloured_full.astype(np.uint8))
 
@@ -260,7 +262,7 @@ if __name__ == '__main__':
     if args.label is not None:
         label = imageio.imread(args.label)
     else:
-        label = args.labels
+        label = args.label
 
     conv_out, full_out = do_crf_inference(image, unary)
     plot_results(image, unary, conv_out, full_out, label, args)

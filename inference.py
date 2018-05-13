@@ -30,8 +30,9 @@ from utils import pascal_visualizer as vis
 
 try:
     import matplotlib.pyplot as plt
-    plt.figure()
+    figure = plt.figure()
     matplotlib = True
+    plt.close(figure)
 except:
     matplotlib = False
     pass
@@ -47,8 +48,7 @@ def do_crf_inference(image, unary, speed_test):
     num_classes = unary.shape[2]
     shape = image.shape[0:2]
     config = convcrf.default_conf
-    config['filter_size'] = 9
-    config['blur'] = 2
+    config['filter_size'] = 7
 
     ##
     # make input pytorch compatible
@@ -80,7 +80,9 @@ def do_crf_inference(image, unary, speed_test):
         start_time = time.time()
         for i in range(10):
             # Running ConvCRF 10 times and average total time
-            gausscrf.forward(unary=unary_var, img=img_var)
+            pred = gausscrf.forward(unary=unary_var, img=img_var)
+
+        pred.cpu()  # wait for all GPU computations to finish
 
         duration = (time.time() - start_time) * 1000 / 10
 
