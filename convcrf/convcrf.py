@@ -24,9 +24,12 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
 
 try:
     import pyinn as P
+    has_pyinn = True
 except ImportError:
-    # Without pyinn the pytorch4 implementation
-    # has to be used. It is ~20% slower.
+    #  PyInn is required to use our cuda based message-passing implementation
+    #  Torch 0.4 provides a im2col operation, which will be used instead.
+    #  It is ~20% slower.
+    has_pyinn = False
     pass
 
 from utils import test_utils
@@ -68,6 +71,8 @@ default_conf = {
         'use_bias': False
     },
     "trainable_bias": False,
+
+    "pyinn": False
 }
 
 
@@ -152,7 +157,8 @@ class GaussCRF(nn.Module):
             norm=conf['norm'], blur=conf['blur'], trainable=conf['trainable'],
             convcomp=conf['convcomp'], weight=weight,
             final_softmax=conf['final_softmax'],
-            unary_weight=conf['unary_weight'])
+            unary_weight=conf['unary_weight'],
+            pyinn=conf['pyinn'])
 
         return
 
@@ -246,7 +252,7 @@ class MessagePassingCol():
     def __init__(self, feat_list, compat_list, merge, npixels, nclasses,
                  norm="sym",
                  filter_size=5, clip_edges=0, use_gpu=False,
-                 blur=1, matmul=False, verbose=False):
+                 blur=1, matmul=False, verbose=False, pyinn=False):
 
         assert(use_gpu)
 
@@ -260,6 +266,7 @@ class MessagePassingCol():
         self.use_gpu = use_gpu
         self.verbose = verbose
         self.blur = blur
+        self.pyinn = pyinn
 
         self.merge = merge
 
@@ -390,13 +397,17 @@ class MessagePassingCol():
         if self.verbose:
             show_memusage(name="Init")
 
-        if False:
+        if self.pyinn:
             input_col = P.im2col(input, self.filter_size, 1, self.span)
         else:
             # An alternative implementation of num2col.
-            # F.unfold is currently (jan 2018) not in stable
-            # This implementation will work with the next major
-            # pytorch release
+            #
+            # This has implementation uses the torch 0.4 im2col operation.
+            # This implementation was not avaible when we did the experiments
+            # published in our paper. So less "testing" has been done.
+            #
+            # It is around ~20% slower then the pyinn implementation but
+            # easier to use as it removes a dependency.
             input_unfold = F.unfold(input, self.filter_size, 1, self.span)
             input_unfold = input_unfold.view(
                 bs, num_channels, self.filter_size, self.filter_size,
@@ -452,7 +463,8 @@ class ConvCRF(nn.Module):
                  norm='sym', merge=False,
                  verbose=False, trainable=False,
                  convcomp=False, weight=None,
-                 final_softmax=True, unary_weight=10):
+                 final_softmax=True, unary_weight=10,
+                 pyinn=False):
 
         super(ConvCRF, self).__init__()
         self.nclasses = nclasses
@@ -467,6 +479,7 @@ class ConvCRF(nn.Module):
         self.verbose = verbose
         self.blur = blur
         self.final_softmax = final_softmax
+        self.pyinn = pyinn
 
         self.conf = conf
 
@@ -525,7 +538,8 @@ class ConvCRF(nn.Module):
             use_gpu=True,
             norm=self.norm,
             verbose=self.verbose,
-            blur=self.blur)
+            blur=self.blur,
+            pyinn=self.pyinn)
 
     def inference(self, unary, num_iter=5):
 

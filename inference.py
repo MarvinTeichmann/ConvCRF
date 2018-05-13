@@ -42,13 +42,20 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     stream=sys.stdout)
 
 
-def do_crf_inference(image, unary, speed_test):
+def do_crf_inference(image, unary, speed_test, pyinn=False):
+
+    if pyinn or not hasattr(torch.nn.functional, 'unfold'):
+        # pytorch 0.3 or older requires pyinn.
+        pyinn = True
+        # Cheap and easy trick to make sure that pyinn is loadable.
+        import pyinn
 
     # get basic hyperparameters
     num_classes = unary.shape[2]
     shape = image.shape[0:2]
     config = convcrf.default_conf
     config['filter_size'] = 7
+    config['pyinn'] = pyinn
 
     ##
     # make input pytorch compatible
@@ -195,6 +202,10 @@ def get_parser():
     parser.add_argument('--speed_test', action='store_true',
                         help="Evaluate and print inference speed.")
 
+    parser.add_argument('--pyinn', action='store_true',
+                        help="Use pyinn based Cuda implementation"
+                             "for message passing.")
+
     # parser.add_argument('--compare', action='store_true')
     # parser.add_argument('--embed', action='store_true')
 
@@ -216,6 +227,6 @@ if __name__ == '__main__':
     else:
         label = args.labels
 
-    prediction = do_crf_inference(image, unary, args.speed_test)
+    prediction = do_crf_inference(image, unary, args.speed_test, args.pyinn)
     plot_results(image, unary, prediction, label, args)
     logging.info("Thank you for trying ConvCRFs.")
