@@ -44,7 +44,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     stream=sys.stdout)
 
 
-def do_crf_inference(image, unary, pyinn=False):
+def do_crf_inference(image, unary, speed_test=False, pyinn=False):
 
     if pyinn or not hasattr(torch.nn.functional, 'unfold'):
         # pytorch 0.3 or older requires pyinn.
@@ -56,10 +56,7 @@ def do_crf_inference(image, unary, pyinn=False):
     num_classes = unary.shape[2]
     shape = image.shape[0:2]
     config = convcrf.default_conf
-    config['filter_size'] = 11
-
-    logging.info("Doing speed benchmark with filter size: {}"
-                 .format(config['filter_size']))
+    config['filter_size'] = 7
 
     ##
     # make input pytorch compatible
@@ -86,57 +83,55 @@ def do_crf_inference(image, unary, pyinn=False):
     'Warm up': Our implementation compiles cuda kernels during runtime.
     The first inference call thus comes with some overhead.
     """
+    logging.info("Start Computation.")
     prediction = gausscrf.forward(unary=unary_var, img=img_var)
 
-    logging.info("Start Computation.")
-    logging.info("Running multiple iteration. This may take a while.")
-    start_time = time.time()
+    if speed_test:
 
-    for i in range(10):
-        # Running ConvCRF 10 times and report average total time
-        prediction = gausscrf.forward(unary=unary_var, img=img_var)
+        logging.info("Doing speed benchmark with filter size: {}"
+                     .format(config['filter_size']))
+        logging.info("Running multiple iteration. This may take a while.")
 
-    prediction.cpu()  # wait for all GPU computations to finish
+        # Our implementation compiles cuda kernels during runtime.
+        # The first inference run is those much slower.
+        # prediction = gausscrf.forward(unary=unary_var, img=img_var)
 
-    duration = (time.time() - start_time) * 1000 / 10
+        start_time = time.time()
+        for i in range(10):
+            # Running ConvCRF 10 times and report average total time
+            prediction = gausscrf.forward(unary=unary_var, img=img_var)
 
-    logging.debug("Finished running 10 predictions.")
-    logging.debug("Avg Computation time: {} ms".format(duration))
+        prediction.cpu()  # wait for all GPU computations to finish
+        duration = (time.time() - start_time) * 1000 / 10
+
+        logging.debug("Finished running 10 predictions.")
+        logging.debug("Avg Computation time: {} ms".format(duration))
 
     myfullcrf = fullcrf.FullCRF(config, shape, num_classes)
+    fullprediction = myfullcrf.compute(unary, image, softmax=False)
 
-    # Initialize permutohedral lattice with image features
-    # myfullcrf.compute_lattice(image)
-    """
-    Computing the lattice is actually part of the processing time.
-    However, in our implementation the features are generated in python,
-    making it an unfairly slow step.
-    """
+    if speed_test:
 
-    for i in range(3):
-        #  'Warm up'
-        fullprediction = myfullcrf.compute(unary, image, softmax=False)
+        start_time = time.time()
+        for i in range(5):
+            # Running FullCRF 5 times and report average total time
+            fullprediction = myfullcrf.compute(unary, image, softmax=False)
 
-    start_time = time.time()
-    for i in range(5):
-        # Running FullCRF 5 times and report average total time
-        fullprediction = myfullcrf.compute(unary, image, softmax=False)
+        fullduration = (time.time() - start_time) * 1000 / 5
 
-    fullduration = (time.time() - start_time) * 1000 / 5
+        logging.debug("Finished running 5 predictions.")
+        logging.debug("Avg Computation time: {} ms".format(fullduration))
 
-    logging.debug("Finished running 2 predictions.")
-    logging.debug("Avg Computation time: {} ms".format(fullduration))
+        logging.info("Using FullCRF took {:4.0f} ms ({:2.2f} s)".format(
+            fullduration, fullduration / 1000))
 
-    logging.info("Using FullCRF took {:4.0f} ms ({:2.2f} s)".format(
-        fullduration, fullduration / 1000))
+        logging.info("Using ConvCRF took {:4.0f} ms ({:2.2f} s)".format(
+            duration, duration / 1000))
 
-    logging.info("Using ConvCRF took {:4.0f} ms ({:2.2f} s)".format(
-        duration, duration / 1000))
+        logging.info("Congratulation. Using ConvCRF provids a speed-up"
+                     " of {:.0f}.".format(fullduration / duration))
 
-    logging.info("Congratulation. Using ConvCRF provids a speed-up"
-                 " of {:.0f}.".format(fullduration / duration))
-
-    logging.info("")
+        logging.info("")
 
     return prediction.data.cpu().numpy(), fullprediction
 
@@ -249,6 +244,9 @@ def get_parser():
     parser.add_argument('--output', type=str,
                         help="Optionally save output as img.")
 
+    parser.add_argument('--speed_test', action='store_true',
+                        help="Evaluate and print inference speeds.")
+
     parser.add_argument('--pyinn', action='store_true',
                         help="Use pyinn based Cuda implementation"
                              "for message passing.")
@@ -274,6 +272,7 @@ if __name__ == '__main__':
     else:
         label = args.label
 
-    conv_out, full_out = do_crf_inference(image, unary, pyinn=args.pyinn)
+    conv_out, full_out = do_crf_inference(
+        image, unary, args.speed_test, pyinn=args.pyinn)
     plot_results(image, unary, conv_out, full_out, label, args)
     logging.info("Thank you for trying ConvCRFs.")
