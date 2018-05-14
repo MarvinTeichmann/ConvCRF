@@ -28,7 +28,7 @@ try:
 except ImportError:
     #  PyInn is required to use our cuda based message-passing implementation
     #  Torch 0.4 provides a im2col operation, which will be used instead.
-    #  It is ~20% slower.
+    #  It is ~15% slower.
     has_pyinn = False
     pass
 

@@ -16,5 +16,5 @@ Requirements
 * cython
 * pydensecrf
 
-* scipy
+* scikit-image
 * matplotlib

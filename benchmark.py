@@ -27,6 +27,7 @@ import torch
 from torch.autograd import Variable
 
 from utils import pascal_visualizer as vis
+from utils import synthetic
 
 import time
 
@@ -143,18 +144,8 @@ def plot_results(image, unary, conv_out, full_out, label, args):
     # Create visualizer
     myvis = vis.PascalVisualizer()
 
-    if label is not None:
-        # Transform id image to coloured labels
-        coloured_label = myvis.id2color(id_image=label)
-        # Plot parameters
-        num_rows = 2
-        num_cols = 3
-        off = 0
-    else:
-        # Plot parameters
-        num_cols = 2
-        num_rows = 2
-        off = 1
+    # Transform id image to coloured labels
+    coloured_label = myvis.id2color(id_image=label)
 
     unary_hard = np.argmax(unary, axis=2)
     coloured_unary = myvis.id2color(id_image=unary_hard)
@@ -170,6 +161,10 @@ def plot_results(image, unary, conv_out, full_out, label, args):
         # Plot results using matplotlib
         figure = plt.figure()
         figure.tight_layout()
+        # Plot parameters
+        num_rows = 2
+        num_cols = 3
+        off = 0
 
         ax = figure.add_subplot(num_rows, num_cols, 1)
         # img_name = os.path.basename(args.image)
@@ -210,14 +205,9 @@ def plot_results(image, unary, conv_out, full_out, label, args):
 
     if args.output is not None:
         # Save results to disk
-        if label is not None:
-            out_img = np.concatenate(
-                (image, coloured_label, coloured_unary, coloured_conv),
-                axis=1)
-        else:
-            out_img = np.concatenate(
-                (image, coloured_unary, coloured_conv),
-                axis=1)
+        out_img = np.concatenate(
+            (image, coloured_label, coloured_unary, coloured_conv),
+            axis=1)
 
         imageio.imwrite(args.output, out_img.astype(np.uint8))
 
@@ -234,12 +224,8 @@ def get_parser():
     parser.add_argument("image", type=str,
                         help="input image")
 
-    parser.add_argument("unary", type=str,
-                        help="unary for input")
-
-    parser.add_argument("label", type=str, nargs='?',
-                        help="Label file (Optional: Used for plotting only"
-                        ". Recommended).")
+    parser.add_argument("label", type=str,
+                        help="Label file.")
 
     parser.add_argument("--gpu", type=str, default='0',
                         help="which gpu to use")
@@ -266,14 +252,13 @@ if __name__ == '__main__':
     parser = get_parser()
     args = parser.parse_args()
 
-    logging.info("Load and uncompress data.")
-
+    # Load data
     image = imageio.imread(args.image)
-    unary = np.load(args.unary)['arr_0']
-    if args.label is not None:
-        label = imageio.imread(args.label)
-    else:
-        label = args.label
+    label = imageio.imread(args.label)
+
+    # Produce unary by adding noise to label
+    unary = synthetic.augment_label(label, num_classes=21)
+    # Compute CRF inference
 
     conv_out, full_out = do_crf_inference(
         image, unary, args.speed_test, pyinn=args.pyinn)
