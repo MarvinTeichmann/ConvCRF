@@ -8,8 +8,6 @@ Requirements
 -------------
 
 Plattform: Linux, python3 >= 3.4 (or python2 >= 2.7), [cython]
-
 Python Packages: numpy, imageio, cython, scikit-image, matplotlib
-
 Optional: pyinn, pydensecrf
 
