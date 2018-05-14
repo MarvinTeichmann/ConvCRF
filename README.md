@@ -20,6 +20,12 @@ To install those python packages run `pip install -r requirements.txt` or `pip i
 [**PyINN**][3] integrates CuPy into PyTorch. This allows us to write native cuda operations and compile them on-the-fly during runtime. PyINN is the basis of your initial ConvCRF implementation. PyTorch 0.4 introduces an Im2Col layer, making it possible to implement ConvCRFs entirely in PyTorch. PyINN is only required for PyTorch 0.3 users, but also can be used as alternative backend in PyTorch 0.4. To install PyINN, follow the instructions [here][3] or simply run `pip install git+https://github.com/szagoruyko/pyinn.git@master`.
 
 
+Execute
+--------
+
+**Inference**: Run `python inference.py data/2007_001288_0img.png data/2007_001288_5labels.png` to perform ConvCRF inference on a single image. Try `python inference.py --help` to see more options.
+
+
 
 
 
