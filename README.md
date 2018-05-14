@@ -25,7 +25,15 @@ Execute
 
 **Inference**: Run `python inference.py data/2007_001288_0img.png data/2007_001288_5labels.png` to perform ConvCRF inference on a single image. Try `python inference.py --help` to see more options.
 
-**Benchmark**: Run `python benchmark.py data/2007_001288_0img.png data/2007_001288_5labels.png` to compare the performance of ConvCRFs to FullCRFs. This script will also tell you how much faster ConvCRFs are. On my system I get a speed-up factor of **31**. Try `python benchmark.py --help` to see more options.
+**Benchmark**: Run `python benchmark.py data/2007_001288_0img.png data/2007_001288_5labels.png` to compare the performance of ConvCRFs to FullCRFs. This script will also tell you how much faster ConvCRFs are. On my system I get a speed-up factor of **31**.
+
+TODO
+-----
+
+- [x] Build a native PyTorch 0.4 implementation of ConvCRF
+- [ ] Add more comments to ConvCRF class
+- [ ] Add setup.py script and reorganize repository
+- [ ] Build a Tensorflow Implementation of ConvCRF
 
 
 
