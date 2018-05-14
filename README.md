@@ -25,7 +25,7 @@ Execute
 
 **Demo**: Run `python demo.py data/2007_001288_0img.png data/2007_001288_5labels.png` to perform ConvCRF inference on a single image. Try `python demo.py --help` to see more options.
 
-**Benchmark**: Run `python benchmark.py data/2007_001288_0img.png data/2007_001288_5labels.png` to compare the performance of ConvCRFs to FullCRFs. This script will also tell you how much faster ConvCRFs are. On my system I get a speed-up factor of **31**.
+**Benchmark**: Run `python benchmark.py data/2007_001288_0img.png data/2007_001288_5labels.png` to compare the performance of ConvCRFs to FullCRFs. This script will also tell you how much faster ConvCRFs are. On my system ConvCRF is more then **30** times faster.
 
 TODO
 -----
