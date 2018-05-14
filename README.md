@@ -4,17 +4,12 @@ This repository contains the reference implementation for our proposed Convoluti
 
 ![Example Output](data/output/Res2.png)
 
-# Too Early (Bird)
-
-Wow, you have found this repository very early. The code is fully functional, but we are still working on the documentation.
-
 Requirements
+-------------
 
+Plattform: Linux, python3 >= 3.4 (or python2 >= 2.7), [cython]
 
-* python3,
-* pytorch 0.3
-* cython
-* pydensecrf
+Python Packages: numpy, imageio, cython, scikit-image, matplotlib
 
-* scikit-image
-* matplotlib
+Optional: pyinn, pydensecrf
+
