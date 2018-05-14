@@ -147,8 +147,8 @@ def plot_results(image, unary, conv_out, full_out, label, args):
         # Transform id image to coloured labels
         coloured_label = myvis.id2color(id_image=label)
         # Plot parameters
-        num_rows = 1
-        num_cols = 5
+        num_rows = 2
+        num_cols = 3
         off = 0
     else:
         # Plot parameters
@@ -196,6 +196,9 @@ def plot_results(image, unary, conv_out, full_out, label, args):
         ax.set_title('FullCRF Output')
         ax.axis('off')
         ax.imshow(coloured_full.astype(np.uint8))
+
+        # plt.subplots_adjust(left=0.02, right=0.98,
+        #                    wspace=0.15, hspace=0.15)
 
         plt.show()
     else:
@@ -263,7 +266,7 @@ if __name__ == '__main__':
     parser = get_parser()
     args = parser.parse_args()
 
-    logging.debug("Load and uncompress data.")
+    logging.info("Load and uncompress data.")
 
     image = imageio.imread(args.image)
     unary = np.load(args.unary)['arr_0']
