@@ -45,7 +45,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     stream=sys.stdout)
 
 
-def do_crf_inference(image, unary, speed_test=False, pyinn=False):
+def do_crf_inference(image, unary, speed_eval=False, pyinn=False):
 
     if pyinn or not hasattr(torch.nn.functional, 'unfold'):
         # pytorch 0.3 or older requires pyinn.
@@ -87,7 +87,7 @@ def do_crf_inference(image, unary, speed_test=False, pyinn=False):
     logging.info("Start Computation.")
     prediction = gausscrf.forward(unary=unary_var, img=img_var)
 
-    if speed_test:
+    if speed_eval:
 
         logging.info("Doing speed benchmark with filter size: {}"
                      .format(config['filter_size']))
@@ -111,7 +111,7 @@ def do_crf_inference(image, unary, speed_test=False, pyinn=False):
     myfullcrf = fullcrf.FullCRF(config, shape, num_classes)
     fullprediction = myfullcrf.compute(unary, image, softmax=False)
 
-    if speed_test:
+    if speed_eval:
 
         start_time = time.time()
         for i in range(5):
@@ -233,8 +233,8 @@ def get_parser():
     parser.add_argument('--output', type=str,
                         help="Optionally save output as img.")
 
-    parser.add_argument('--speed_test', action='store_true',
-                        help="Evaluate and print inference speeds.")
+    parser.add_argument('--nospeed', action='store_false',
+                        help="Skip speed evaluation.")
 
     parser.add_argument('--pyinn', action='store_true',
                         help="Use pyinn based Cuda implementation"
@@ -261,6 +261,6 @@ if __name__ == '__main__':
     # Compute CRF inference
 
     conv_out, full_out = do_crf_inference(
-        image, unary, args.speed_test, pyinn=args.pyinn)
+        image, unary, args.nospeed, pyinn=args.pyinn)
     plot_results(image, unary, conv_out, full_out, label, args)
     logging.info("Thank you for trying ConvCRFs.")

@@ -43,7 +43,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     stream=sys.stdout)
 
 
-def do_crf_inference(image, unary, speed_test, pyinn=False):
+def do_crf_inference(image, unary, speed_eval, pyinn=False):
 
     if pyinn or not hasattr(torch.nn.functional, 'unfold'):
         # pytorch 0.3 or older requires pyinn.
@@ -82,7 +82,7 @@ def do_crf_inference(image, unary, speed_test, pyinn=False):
     # Perform CRF inference
     prediction = gausscrf.forward(unary=unary_var, img=img_var)
 
-    if speed_test:
+    if speed_eval:
         # Evaluate inference speed
         logging.info("Doing speed evaluation.")
         start_time = time.time()
@@ -185,8 +185,8 @@ def get_parser():
     parser.add_argument('--output', type=str,
                         help="Optionally save output as img.")
 
-    parser.add_argument('--speed_test', action='store_true',
-                        help="Evaluate and print inference speed.")
+    parser.add_argument('--nospeed', action='store_false',
+                        help="Skip speed evaluation.")
 
     parser.add_argument('--pyinn', action='store_true',
                         help="Use pyinn based Cuda implementation"
@@ -211,7 +211,7 @@ if __name__ == '__main__':
     # Produce unary by adding noise to label
     unary = synthetic.augment_label(label, num_classes=21)
     # Compute CRF inference
-    prediction = do_crf_inference(image, unary, args.speed_test, args.pyinn)
+    prediction = do_crf_inference(image, unary, args.nospeed, args.pyinn)
     # Plot output
     plot_results(image, unary, prediction, label, args)
     logging.info("Thank you for trying ConvCRFs.")
