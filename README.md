@@ -3,7 +3,7 @@ This repository contains the reference implementation for our proposed Convoluti
 
 # Too Early (Bird)
 
-Wow, you have found this repository very early. We are still cleaning up code. Implementations will be pushed over the next couple of days.
+Wow, you have found this repository very early. The code is fully functional, but we are still working on the documentation.
 
 Requirements
 ============
