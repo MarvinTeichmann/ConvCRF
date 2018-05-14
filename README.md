@@ -13,9 +13,11 @@ Requirements
 
 To install those python packages run `pip install -r requirements.txt` or `pip install numpy imageio cython scikit-image matplotlib`. I recommand using a [python virtualenv][1].
 
-**Optional Packages**: *pyinn, pydensecrf*
+### Optional Packages: pyinn, pydensecrf
 
-**Pydensecrf** is required in order to run FullCRF, which is only needed for the benchmark. To install pydensecrf, follow the instructions [here][2] or simply run `pip install git+https://github.com/lucasb-eyer/pydensecrf.git`. **Warning** Running `pip install git+` downloads and installs code from the internet.
+[**Pydensecrf**][2] is required in order to run FullCRF, which is only needed for the benchmark. To install pydensecrf, follow the instructions [here][2] or simply run `pip install git+https://github.com/lucasb-eyer/pydensecrf.git`. **Warning** Running `pip install git+` downloads and installs external code from the internet.
+
+[**PyINN**][3] integrates CuPy into PyTorch. This allows us to write native cuda operations and compile them on-the-fly during runtime. PyINN is the basis of your initial ConvCRF implementation. PyTorch 0.4 introduces an Im2Col layer (in part due to our Feedback). This makes it possible to implement ConvCRFs entirely in pytorch. PyINN is only required for PyTorch 0.3 users, but also can be used as alternative backend in PyTorch 0.4. To install PyINN, follow the instructions [here][3] or simply run `pip install git+https://github.com/szagoruyko/pyinn.git@master`. **Warning** Running `pip install git+` downloads and installs external code from the internet.
 
 
 
@@ -25,3 +27,4 @@ To install those python packages run `pip install -r requirements.txt` or `pip i
 
 [1]: https://virtualenvwrapper.readthedocs.io/en/latest/
 [2]: https://github.com/lucasb-eyer/pydensecrf
+[3]: https://github.com/szagoruyko/pyinn
