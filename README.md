@@ -7,7 +7,17 @@ This repository contains the reference implementation for our proposed Convoluti
 Requirements
 -------------
 
-Plattform: Linux, python3 >= 3.4 (or python2 >= 2.7), [cython]
+Plattform: Linux, python3 >= 3.4 (or python2 >= 2.7), pytorch 0.4 (or pytorch 0.3 + pyinn), cuda, cudnn
+
 Python Packages: numpy, imageio, cython, scikit-image, matplotlib
+
+To install those python packages run 'pip install -r requirements.txt' or 'pip install numpy imageio cython scikit-image matplotlib'. I recommand using a [python virtualenv](https://virtualenvwrapper.readthedocs.io/en/latest/).
+
+
+
 Optional: pyinn, pydensecrf
+
+
+
+
 
