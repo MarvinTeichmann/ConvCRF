@@ -13,10 +13,10 @@ Requirements
 
 To install those python packages run `pip install -r requirements.txt` or `pip install numpy imageio cython scikit-image matplotlib`. I recommand using a [python virtualenv][1].
 
+**Optional Packages**: *pyinn, pydensecrf*
 
+**Pydensecrf** is required in order to run FullCRF, which is only needed for the benchmark. To install pydensecrf, follow the instructions [here][2] or simply run `pip install git+https://github.com/lucasb-eyer/pydensecrf.git`. **Warning** Running `pip install git+` downloads and installs code from the internet.
 
-
-Optional: pyinn, pydensecrf
 
 
 
@@ -24,3 +24,4 @@ Optional: pyinn, pydensecrf
 
 
 [1]: https://virtualenvwrapper.readthedocs.io/en/latest/
+[2]: https://github.com/lucasb-eyer/pydensecrf
