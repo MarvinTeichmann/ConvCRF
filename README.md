@@ -11,7 +11,7 @@ Requirements
 
 **Python Packages**: *numpy, imageio, cython, scikit-image, matplotlib*
 
-To install those python packages run *pip install -r requirements.txt* or *pip install numpy imageio cython scikit-image matplotlib*. I recommand using a [python virtualenv][1].
+To install those python packages run `pip install -r requirements.txt` or `pip install numpy imageio cython scikit-image matplotlib`. I recommand using a [python virtualenv][1].
 
 
 
