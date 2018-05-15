@@ -1,6 +1,6 @@
 ConvCRF
 ========
-This repository contains the reference implementation for our proposed [Convolutional CRFs][4] in PyTorch (Tensorflow planned). The two main entry-points are [demo.py](demo.py) and [benchmark.py](benchmark.py). Demo.py performs ConvCRF inference on a single input image while benchmark.py compares ConvCRF with FullCRF. Both scripts output plots as shown below.
+This repository contains the reference implementation for our proposed [Convolutional CRFs][4] in PyTorch (Tensorflow planned). The two main entry-points are [demo.py](demo.py) and [benchmark.py](benchmark.py). Demo.py performs ConvCRF inference on a single input image while benchmark.py compares ConvCRF with FullCRF. Both scripts output plots similar to the one shown below.
 
 ![Example Output](data/output/Res2.png)
 
