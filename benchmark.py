@@ -1,7 +1,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2017 Marvin Teichmann
+Copyright (c) 2018 <First Author of ConvCRF Paper>
 """
 
 from __future__ import absolute_import
