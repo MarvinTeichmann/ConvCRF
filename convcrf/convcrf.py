@@ -45,6 +45,7 @@ import torch.nn.functional as F
 import gc
 
 
+# Default config as proposed by Philipp Krähenbühl and Vladlen Koltun,
 default_conf = {
     'filter_size': 11,
     'blur': 4,
@@ -66,7 +67,9 @@ default_conf = {
     },
     'col_feats': {
         'sdims': 80,
-        'schan': 13,
+        'schan': 13,   # schan depend on the input scale.
+                       # use schan = 13 for images in [0, 255]
+                       # for normalized images in [-0.5, 0.5] try schan = 0.1
         'compat': 10,
         'use_bias': False
     },
@@ -75,7 +78,7 @@ default_conf = {
     "pyinn": False
 }
 
-
+# Config used for test cases on 10 x 10 pixel greyscale inpu
 test_config = {
     'filter_size': 5,
     'blur': 1,
@@ -108,6 +111,13 @@ test_config = {
 
 
 class GaussCRF(nn.Module):
+    """ Implements ConvCRF with hand-crafted features.
+
+        It uses the more generic ConvCRF class as basis and utilizes a config
+        dict to easily set hyperparameters and follows the design choices of:
+        Philipp Krähenbühl and Vladlen Koltun, "Efficient Inference in Fully
+        "Connected CRFs with Gaussian Edge Pots" (arxiv.org/abs/1210.5644)
+    """
 
     def __init__(self, conf, shape, nclasses=None):
         super(GaussCRF, self).__init__()
@@ -163,6 +173,22 @@ class GaussCRF(nn.Module):
         return
 
     def forward(self, unary, img, num_iter=5):
+        """ Run a forward pass through ConvCRF.
+
+        Arguments:
+            unary: Tensor with shape [bs, num_classes, height, width].
+                The unary predictions. Logsoftmax is applied to the unaries
+                during inference. When using CNNs don't apply softmax,
+                use unnormalized output (logits) instead.
+
+            img: Tensor with shape [bs, 3, height, width]
+                The input image. Default config assumes image
+                data in [0, 255]. For normalized images adapt
+                `schan`. Try schan = 0.1 for images in [-0.5, 0.5]
+
+        Returns:
+            a :class:`PackedSequence` object
+        """
 
         conf = self.conf
 
@@ -248,6 +274,10 @@ def _negative(dz):
 
 
 class MessagePassingCol():
+    """ Perform the Message passing of ConvCRFs.
+
+    The main magic happens here.
+    """
 
     def __init__(self, feat_list, compat_list, merge, npixels, nclasses,
                  norm="sym",
@@ -455,7 +485,11 @@ class MessagePassingCol():
 
 
 class ConvCRF(nn.Module):
-    """This is a reimplementation of DenseCRF (almost) entirely in python.
+    """
+        Implements a generic CRF class.
+
+    This class provides tools to build
+    your own ConvCRF based model.
     """
 
     def __init__(self, npixels, nclasses, conf,
