@@ -86,6 +86,12 @@ test_config = {
 
 
 class FullCRF():
+    """ Implements FullCRF with hand-crafted features.
+
+    This class uses pydensecrf to implement the CRF model proposed by:
+    Philipp Krähenbühl and Vladlen Koltun, "Efficient Inference in Fully
+    "Connected CRFs with Gaussian Edge Pots" (arxiv.org/abs/1210.5644)
+    """
 
     def __init__(self, conf, shape, num_classes=None):
         self.crf = None
@@ -94,6 +100,15 @@ class FullCRF():
         self.shape = shape
 
     def compute_lattice(self, img, num_classes=None):
+        """
+        Compute indices for the lattice approximation.
+
+         Arguments:
+            img: np.array with shape [height, width, 3]
+                The input image. Default config assumes image
+                data in [0, 255]. For normalized images adapt
+                `schan`. Try schan = 0.1 for images in [-0.5, 0.5]
+        """
 
         if num_classes is not None:
             self.num_classes = num_classes
@@ -129,12 +144,13 @@ class FullCRF():
             self.appear_feats, compat=self.conf['pos_feats']['compat'])
 
     def compute_dcrf(self, unary):
+        """
+        Compute dcrf assuming compute_lattice was called.
 
-        # self.crf.addPairwiseEnergy(
-        #    self.smooth_feats, compat=self.conf['pos_feats']['compat'])
-
-        # self.crf.addPairwiseEnergy(
-        #     self.appear_feats, compat=self.conf['pos_feats']['compat'])
+        Arguments:
+            unary: np.array with shape [height, width, num_classes]
+                The unary predictions.
+        """
 
         eps = 1e-20
         unary = unary + eps
@@ -151,6 +167,22 @@ class FullCRF():
         return crfout
 
     def compute(self, unary, img, softmax=False):
+        """
+        Full forward pass on numpy arrays.
+
+        This function calls `compute_lattice` followed by compute_dcrf
+
+        Arguments:
+            unary: np.array with shape [height, width, num_classes]
+                The unary predictions.
+            img: np.array with shape [height, width, 3]
+                The input image. Default config assumes image
+                data in [0, 255]. For normalized images adapt
+                `schan`. Try schan = 0.1 for images in [-0.5, 0.5]
+
+            softmax: bool
+                Whether to apply softmax. Unaries need to be normalized.
+        """
         if softmax:
             unary = torch.nn.functional.softmax(
                 Variable(torch.Tensor(unary)), dim=2)
@@ -159,6 +191,22 @@ class FullCRF():
         return self.compute_dcrf(unary)
 
     def batched_compute(self, unary, img, softmax=False):
+        """
+        Perform compute on batched torch.tensors.
+
+        Arguments:
+            unary: torch.Tensor with shape [bs, num_classes, height, width].
+                The unary predictions.
+
+            img: torch.Tensor with shape [bs, 3, height, width]
+                The input image. Default config assumes image
+                data in [0, 255]. For normalized images adapt
+                `schan`. Try schan = 0.1 for images in [-0.5, 0.5]
+
+            softmax: bool
+                Whether to apply softmax. Unaries need to be normalized.
+        """
+
         img = img.data.cpu().numpy()
         unary = unary.data.cpu().numpy()
 

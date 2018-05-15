@@ -176,18 +176,15 @@ class GaussCRF(nn.Module):
         """ Run a forward pass through ConvCRF.
 
         Arguments:
-            unary: Tensor with shape [bs, num_classes, height, width].
+            unary: torch.Tensor with shape [bs, num_classes, height, width].
                 The unary predictions. Logsoftmax is applied to the unaries
                 during inference. When using CNNs don't apply softmax,
                 use unnormalized output (logits) instead.
 
-            img: Tensor with shape [bs, 3, height, width]
+            img: torch.Tensor with shape [bs, 3, height, width]
                 The input image. Default config assumes image
                 data in [0, 255]. For normalized images adapt
                 `schan`. Try schan = 0.1 for images in [-0.5, 0.5]
-
-        Returns:
-            a :class:`PackedSequence` object
         """
 
         conf = self.conf
