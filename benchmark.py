@@ -45,11 +45,11 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     stream=sys.stdout)
 
 
-def do_crf_inference(image, unary, speed_eval=False, pyinn=False):
+def do_crf_inference(image, unary, args):
 
-    if pyinn or not hasattr(torch.nn.functional, 'unfold'):
+    if args.pyinn or not hasattr(torch.nn.functional, 'unfold'):
         # pytorch 0.3 or older requires pyinn.
-        pyinn = True
+        args.pyinn = True
         # Cheap and easy trick to make sure that pyinn is loadable.
         import pyinn
 
@@ -58,8 +58,26 @@ def do_crf_inference(image, unary, speed_eval=False, pyinn=False):
     shape = image.shape[0:2]
     config = convcrf.default_conf
     config['filter_size'] = 7
+    config['pyinn'] = args.pyinn
 
-    ##
+    if args.normalize:
+        # Warning, applying image normalization affects CRF computation.
+        # The parameter 'col_feats::schan' needs to be adapted.
+
+        # Normalize image range
+        #     This changes the image features and influences CRF output
+        image = image / 255
+        # mean substraction
+        #    CRF is invariant to mean subtraction, output is NOT affected
+        image = image - 0.5
+        # std normalization
+        #       Affect CRF computation
+        image = image / 0.3
+
+        # schan = 0.1 is a good starting value for normalized images.
+        # The relation is f_i = image / schan
+        config['col_feats']['schan'] = 0.1
+
     # make input pytorch compatible
     img = image.transpose(2, 0, 1)  # shape: [3, hight, width]
     # Add batch dimension to image: [1, 3, height, width]
@@ -79,7 +97,7 @@ def do_crf_inference(image, unary, speed_eval=False, pyinn=False):
     # A CPU implementation of our message passing is not provided.
     gausscrf.cuda()
 
-    # Perform CRF inference
+    # Perform ConvCRF inference
     """
     'Warm up': Our implementation compiles cuda kernels during runtime.
     The first inference call thus comes with some overhead.
@@ -87,7 +105,7 @@ def do_crf_inference(image, unary, speed_eval=False, pyinn=False):
     logging.info("Start Computation.")
     prediction = gausscrf.forward(unary=unary_var, img=img_var)
 
-    if speed_eval:
+    if args.nospeed:
 
         logging.info("Doing speed benchmark with filter size: {}"
                      .format(config['filter_size']))
@@ -108,10 +126,11 @@ def do_crf_inference(image, unary, speed_eval=False, pyinn=False):
         logging.debug("Finished running 10 predictions.")
         logging.debug("Avg Computation time: {} ms".format(duration))
 
+    # Perform FullCRF inference
     myfullcrf = fullcrf.FullCRF(config, shape, num_classes)
     fullprediction = myfullcrf.compute(unary, image, softmax=False)
 
-    if speed_eval:
+    if args.nospeed:
 
         start_time = time.time()
         for i in range(5):
@@ -236,14 +255,12 @@ def get_parser():
     parser.add_argument('--nospeed', action='store_false',
                         help="Skip speed evaluation.")
 
+    parser.add_argument('--normalize', action='store_true',
+                        help="Normalize input image before inference.")
+
     parser.add_argument('--pyinn', action='store_true',
                         help="Use pyinn based Cuda implementation"
                              "for message passing.")
-
-    # parser.add_argument('--compare', action='store_true')
-    # parser.add_argument('--embed', action='store_true')
-
-    # args = parser.parse_args()
 
     return parser
 
@@ -260,7 +277,6 @@ if __name__ == '__main__':
     unary = synthetic.augment_label(label, num_classes=21)
     # Compute CRF inference
 
-    conv_out, full_out = do_crf_inference(
-        image, unary, args.nospeed, pyinn=args.pyinn)
+    conv_out, full_out = do_crf_inference(image, unary, args)
     plot_results(image, unary, conv_out, full_out, label, args)
     logging.info("Thank you for trying ConvCRFs.")
