@@ -1,6 +1,6 @@
 ConvCRF
 ========
-This repository contains the reference implementation for our proposed Convolutional CRFs in PyTorch (Tensorflow planned). The two main entry-points are [demo.py](demo.py) and [benchmark.py](benchmark.py). Demo.py performs ConvCRF inference on a single input image while benchmark.py compares ConvCRF with FullCRF. Both scripts output plots as shown below.
+This repository contains the reference implementation for our proposed [Convolutional CRFs][4] in PyTorch (Tensorflow planned). The two main entry-points are [demo.py](demo.py) and [benchmark.py](benchmark.py). Demo.py performs ConvCRF inference on a single input image while benchmark.py compares ConvCRF with FullCRF. Both scripts output plots as shown below.
 
 ![Example Output](data/output/Res2.png)
 
@@ -27,17 +27,21 @@ Execute
 
 **Benchmark**: Run `python benchmark.py data/2007_001288_0img.png data/2007_001288_5labels.png` to compare the performance of ConvCRFs to FullCRFs. This script will also tell you how much faster ConvCRFs are. On my system ConvCRF7 is more then **40** and ConvCRF5 more then **60** times faster.
 
+
+Citation
+--------
+If you benefit from this project, please consider citing our [paper][4]. 
+
 TODO
 -----
 
 - [x] Build a native PyTorch 0.4 implementation of ConvCRF
-- [x] Provice python 2 implementation
-- [ ] Add more comments to ConvCRF class
-- [ ] Add setup.py script and reorganize repository
-- [ ] Build a Tensorflow Implementation of ConvCRF
+- [x] Provide python 2 implementation
+- [ ] Build a Tensorflow implementation of ConvCRF
 
 
 
 [1]: https://virtualenvwrapper.readthedocs.io/en/latest/
 [2]: https://github.com/lucasb-eyer/pydensecrf
 [3]: https://github.com/szagoruyko/pyinn
+[4]: https://arxiv.org/abs/1805.04777
