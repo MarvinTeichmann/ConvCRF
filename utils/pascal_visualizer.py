@@ -53,7 +53,8 @@ color_list = [(0, 0, 0),
 class PascalVisualizer(vis.SegmentationVisualizer):
 
     def __init__(self):
-        super().__init__(color_list=color_list, name_list=voc_names)
+        super(PascalVisualizer, self).__init__(
+            color_list=color_list, name_list=voc_names)
 
     def plot_sample(self, sample):
 

@@ -110,7 +110,7 @@ test_config = {
 class GaussCRF(nn.Module):
 
     def __init__(self, conf, shape, nclasses=None):
-        super().__init__()
+        super(GaussCRF, self).__init__()
 
         self.conf = conf
         self.shape = shape
@@ -381,8 +381,8 @@ class MessagePassingCol():
         if self.blur > 1:
             off_0 = (self.blur - self.npixels[0] % self.blur) % self.blur
             off_1 = (self.blur - self.npixels[1] % self.blur) % self.blur
-            pad_0 = math.ceil(off_0 / 2)
-            pad_1 = math.ceil(off_1 / 2)
+            pad_0 = int(math.ceil(off_0 / 2))
+            pad_1 = int(math.ceil(off_1 / 2))
             input = torch.nn.functional.avg_pool2d(input,
                                                    kernel_size=self.blur,
                                                    padding=(pad_0, pad_1),
@@ -441,6 +441,7 @@ class MessagePassingCol():
                 message = torch.nn.functional.upsample(message,
                                                        scale_factor=self.blur,
                                                        mode='bilinear')
+
             message = message[:, :, pad_0:pad_0 + in_0, pad_1:in_1 + pad_1]
             message = message.contiguous()
 

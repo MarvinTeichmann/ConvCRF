@@ -31,9 +31,9 @@ TODO
 -----
 
 - [x] Build a native PyTorch 0.4 implementation of ConvCRF
+- [x] Provice python 2 implementation
 - [ ] Add more comments to ConvCRF class
 - [ ] Add setup.py script and reorganize repository
-- [ ] Test python 2 implementation
 - [ ] Build a Tensorflow Implementation of ConvCRF
 
 
