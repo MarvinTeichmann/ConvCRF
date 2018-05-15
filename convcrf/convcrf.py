@@ -45,7 +45,7 @@ import torch.nn.functional as F
 import gc
 
 
-# Default config as proposed by Philipp Krähenbühl and Vladlen Koltun,
+# Default config as proposed by Philipp Kraehenbuehl and Vladlen Koltun,
 default_conf = {
     'filter_size': 11,
     'blur': 4,
@@ -115,7 +115,7 @@ class GaussCRF(nn.Module):
 
         It uses the more generic ConvCRF class as basis and utilizes a config
         dict to easily set hyperparameters and follows the design choices of:
-        Philipp Krähenbühl and Vladlen Koltun, "Efficient Inference in Fully
+        Philipp Kraehenbuehl and Vladlen Koltun, "Efficient Inference in Fully
         "Connected CRFs with Gaussian Edge Pots" (arxiv.org/abs/1210.5644)
     """
 

@@ -89,7 +89,7 @@ class FullCRF():
     """ Implements FullCRF with hand-crafted features.
 
     This class uses pydensecrf to implement the CRF model proposed by:
-    Philipp Krähenbühl and Vladlen Koltun, "Efficient Inference in Fully
+    Philipp Kraehenbuehl and Vladlen Koltun, "Efficient Inference in Fully
     "Connected CRFs with Gaussian Edge Pots" (arxiv.org/abs/1210.5644)
     """
 
