@@ -45,3 +45,9 @@ TODO
 [2]: https://github.com/lucasb-eyer/pydensecrf
 [3]: https://github.com/szagoruyko/pyinn
 [4]: https://arxiv.org/abs/1805.04777
+
+
+where:
+*   NAME: an arbitrary runname
+*   DELF_OAG: path to object_annotation_group created by the delf pipeline
+*   DET_EDG: path to eval_detection_group created by the detection pipeline
