@@ -119,7 +119,7 @@ class GaussCRF(nn.Module):
         "Connected CRFs with Gaussian Edge Pots" (arxiv.org/abs/1210.5644)
     """
 
-    def __init__(self, conf, shape, nclasses=None):
+    def __init__(self, conf, shape, nclasses=None, use_gpu=True):
         super(GaussCRF, self).__init__()
 
         self.conf = conf
@@ -163,7 +163,7 @@ class GaussCRF(nn.Module):
 
         self.CRF = ConvCRF(
             shape, nclasses, mode="col", conf=conf,
-            use_gpu=True, filter_size=conf['filter_size'],
+            use_gpu=use_gpu, filter_size=conf['filter_size'],
             norm=conf['norm'], blur=conf['blur'], trainable=conf['trainable'],
             convcomp=conf['convcomp'], weight=weight,
             final_softmax=conf['final_softmax'],
@@ -280,8 +280,6 @@ class MessagePassingCol():
                  norm="sym",
                  filter_size=5, clip_edges=0, use_gpu=False,
                  blur=1, matmul=False, verbose=False, pyinn=False):
-
-        assert(use_gpu)
 
         if not norm == "sym" and not norm == "none":
             raise NotImplementedError
@@ -558,8 +556,6 @@ class ConvCRF(nn.Module):
     def add_pairwise_energies(self, feat_list, compat_list, merge):
         assert(len(feat_list) == len(compat_list))
 
-        assert(self.use_gpu)
-
         self.kernel = MessagePassingCol(
             feat_list=feat_list,
             compat_list=compat_list,
@@ -567,7 +563,7 @@ class ConvCRF(nn.Module):
             npixels=self.npixels,
             filter_size=self.filter_size,
             nclasses=self.nclasses,
-            use_gpu=True,
+            use_gpu=self.use_gpu,
             norm=self.norm,
             verbose=self.verbose,
             blur=self.blur,
