@@ -82,20 +82,25 @@ def do_crf_inference(image, unary, args):
     img = image.transpose(2, 0, 1)  # shape: [3, hight, width]
     # Add batch dimension to image: [1, 3, height, width]
     img = img.reshape([1, 3, shape[0], shape[1]])
-    img_var = Variable(torch.Tensor(img)).cuda()
+    img_var = Variable(torch.Tensor(img))
 
     un = unary.transpose(2, 0, 1)  # shape: [3, hight, width]
     # Add batch dimension to unary: [1, 21, height, width]
     un = un.reshape([1, num_classes, shape[0], shape[1]])
-    unary_var = Variable(torch.Tensor(un)).cuda()
+    unary_var = Variable(torch.Tensor(un))
 
     logging.debug("Build ConvCRF.")
     ##
     # Create CRF module
-    gausscrf = convcrf.GaussCRF(conf=config, shape=shape, nclasses=num_classes)
-    # Cuda computation is required.
-    # A CPU implementation of our message passing is not provided.
-    gausscrf.cuda()
+    gausscrf = convcrf.GaussCRF(conf=config, shape=shape, nclasses=num_classes,
+                                use_gpu=not args.cpu)
+
+    # move to GPU if requested
+    if not args.cpu:
+        img_var = img_var.cuda()
+        unary_var = unary_var.cuda()
+        gausscrf.cuda()
+
 
     # Perform ConvCRF inference
     """
@@ -261,6 +266,9 @@ def get_parser():
     parser.add_argument('--pyinn', action='store_true',
                         help="Use pyinn based Cuda implementation"
                              "for message passing.")
+
+    parser.add_argument('--cpu', action='store_true',
+                        help="Run on CPU instead of GPU.")
 
     return parser
 
